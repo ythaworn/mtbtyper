@@ -29,7 +29,7 @@ import numpy as np
 
 
 ref_lineage = ["L4", "L4.9", "L4.9(C)", "lineage4"]
-snp_freq_cutoff = 0.5  # for final prediction
+snp_freq_cutoff = 0.5  # cutoff for final prediction
 
 
 def sort_by_freq(n_snp_list, n_snp_table):
@@ -124,9 +124,9 @@ def main(args):
     snp_table = pd.read_csv(os.path.join(args.snpdb, 'main.csv'))
     n_snp_table = snp_table.lineage.value_counts()
 
-    
     if args.all_schemes:
-        all_schemes = ['l2', 'coll2014', 'merker2015', 'shitikov2017']
+        all_schemes = [re.sub('\..*', '', f) for f in os.listdir(args.snpdb) if f.endswith('csv') and f != 'main.csv']
+
         snp_tables = {}
         n_snp_tables = {}
         for i in range(len(all_schemes)):
@@ -155,8 +155,6 @@ def main(args):
         pos = callset['variants/POS'][snp_ind]
         ref = callset['variants/REF'][snp_ind]
         alt = callset['variants/ALT'][snp_ind, 0]
-        
-        # TODO: exclude indels
 
         snp_list = pd.DataFrame(
             {'position': pos, 
@@ -171,7 +169,6 @@ def main(args):
 
         if args.all_schemes:
             snp_pred_all = [None] * len(all_schemes)
-            # snp_pred_all2 = {}
             for i in range(len(all_schemes)):
                 s = all_schemes[i]
                 pred = predict_lineage(snp_list, snp_tables[s], n_snp_tables[s], fotmat_output=True)
