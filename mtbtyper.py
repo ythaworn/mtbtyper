@@ -6,7 +6,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #
-# Copyright (c) 2020
+# Copyright (c) 2021
 # Yuttapong Thawornwattana & Bharkbhoom Jaemsai
 #
 # Requirements:
@@ -65,12 +65,17 @@ def predict_lineage_final(pred):
     """Make final lineage prediction
     """
 
-    pred_level = pred \
-        .assign(level=[s.count('.') for s in pred.lineage]) \
-        .sort_values(by='level', ascending=False)
-    pred_level = pred_level[pred_level.freq > snp_freq_cutoff] \
-        .reset_index(drop=True)
-    return pred_level.lineage[0]
+    if not pred.empty:
+        pred_level = pred \
+            .assign(level=[s.count('.') for s in pred.lineage]) \
+            .sort_values(by='level', ascending=False)
+        pred_level = pred_level[pred_level.freq > snp_freq_cutoff] \
+            .reset_index(drop=True)
+        pred_final = pred_level.lineage[0]
+    else:
+        pred_final = 'unknown'
+
+    return pred_final
 
 
 def predict_lineage(snp_list, snp_table, n_snp_table, fotmat_output=False):
