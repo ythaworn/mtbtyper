@@ -121,12 +121,25 @@ def main(args):
         sys.exit('no vcf files detected')
     
     # prepare SNP schemes
-    scheme = 'l2'
-    snp_table = pd.read_csv(os.path.join(args.snpdb, scheme + '.csv'))
+    snp_table = pd.read_csv(os.path.join(args.snpdb, 'main.csv'))
     n_snp_table = snp_table.lineage.value_counts()
 
+    
+    if args.all_schemes:
+        all_schemes = ['l2', 'coll2014', 'merker2015', 'shitikov2017']
+        snp_tables = {}
+        n_snp_tables = {}
+        for i in range(len(all_schemes)):
+            s = all_schemes[i]
+            snp_tables[s] = pd.read_csv(os.path.join(args.snpdb, s + '.csv'))
+            n_snp_tables[s] = snp_tables[s].lineage.value_counts()
+
+    
     # write csv header line
     hdr = ','.join(['id', 'genotype', 'genotype_specific_snp'])
+    if args.all_schemes:
+        hdr = hdr + ',' + ','.join(all_schemes)
+
     with open(fout, 'w') as file:
         file.write(hdr + '\n')
 
@@ -156,12 +169,23 @@ def main(args):
         # make final prediction
         final_genotype = predict_lineage_final(snp_pred)
 
+        if args.all_schemes:
+            snp_pred_all = [None] * len(all_schemes)
+            # snp_pred_all2 = {}
+            for i in range(len(all_schemes)):
+                s = all_schemes[i]
+                pred = predict_lineage(snp_list, snp_tables[s], n_snp_tables[s], fotmat_output=True)
+                snp_pred_all[i] = pred
+
         # output
         sample_id = os.path.basename(f)
         sample_id = re.sub('\..*', '', sample_id)
 
         with open(fout, 'a') as file:
-            file.write(','.join([sample_id, final_genotype, snp_pred_fmt]) + '\n')
+            if args.all_schemes:
+                file.write(','.join([sample_id, final_genotype, snp_pred_fmt] + snp_pred_all) + '\n')
+            else:
+                file.write(','.join([sample_id, final_genotype, snp_pred_fmt]) + '\n')
 
 
 if __name__ == "__main__":
@@ -184,12 +208,8 @@ if __name__ == "__main__":
         dest='vcf_ending', default='vcf.gz',
         help='ending pattern of vcf file (default: vcf.gz)')
 
-    parser.add_argument('-s', '--scheme', type=str, 
-        dest='scheme', default='combined',
-        help='SNP genotyping scheme (default: combined)')
-
-    parser.add_argument('--final_prediction', action='store_true',
-        help='Make a final prediction (default: off)')
+    parser.add_argument('--all_schemes', action='store_true',
+        help='Add prediction from all available SNP schemes (default: off)')
 
     parser.add_argument('--snpdb', type=str, 
         dest='snpdb', default='snpdb',
