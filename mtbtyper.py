@@ -65,15 +65,17 @@ def predict_lineage_final(pred):
     """Make final lineage prediction
     """
 
+    pred_final = 'unknown'
+
     if not pred.empty:
         pred_level = pred \
             .assign(level=[s.count('.') for s in pred.lineage]) \
             .sort_values(by='level', ascending=False)
         pred_level = pred_level[pred_level.freq > snp_freq_cutoff] \
             .reset_index(drop=True)
-        pred_final = pred_level.lineage[0]
-    else:
-        pred_final = 'unknown'
+
+        if not pred_level.empty:
+            pred_final = pred_level.lineage[0]
 
     return pred_final
 
@@ -126,6 +128,7 @@ def main(args):
 
     if args.all_schemes:
         all_schemes = [re.sub('\..*', '', f) for f in os.listdir(args.snpdb) if f.endswith('csv') and f != 'main.csv']
+        all_schemes.sort()
 
         snp_tables = {}
         n_snp_tables = {}
@@ -145,6 +148,8 @@ def main(args):
 
     # loop over vcf files
     for f in f_vcf:
+        print(os.path.basename(f))
+
         # read SNPs from vcf
         f_tbi = f + '.tbi'
         callset = allel.read_vcf(f, numbers={'GT': 1}, tabix=f_tbi)
@@ -156,9 +161,7 @@ def main(args):
         ref = callset['variants/REF'][snp_ind]
         alt = callset['variants/ALT'][snp_ind, 0]
 
-        snp_list = pd.DataFrame(
-            {'position': pos, 
-             'allele_change': map('/'.join, zip(ref, alt))})
+        snp_list = pd.DataFrame({'position': pos, 'allele_change': map('/'.join, zip(ref, alt))})
 
         # predict lineages
         snp_pred = predict_lineage(snp_list, snp_table, n_snp_table)
