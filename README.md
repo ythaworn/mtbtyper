@@ -65,9 +65,9 @@ The default scheme is a combination of the best scheme for each group of Mtb. It
 | Other L1-L7 lineages | [Coll et al. (2014)](https://doi.org/10.1038/ncomms5812) (diagnostic SNPs) |
 
 
-Other schemes are based on individual published studies. Use `--all_schemes` flag to enable this feature.
+Other schemes are based on individual published studies. Use `--all_schemes` flag to also output SNP counts from these schemes.
 
-| scheme              | description | reference<img width=200/> |
+| scheme              | description | reference |
 | ------------------- | ----------- | --------- |
 | `coll2014`          | L1-L7 from a global collection | [Coll et al. (2014)](https://doi.org/10.1038/ncomms5812), available [here](https://datacompass.lshtm.ac.uk/id/eprint/414/) |
 | `coll2014_diag`     | Diagnostic subset of `coll2014` | [Coll et al. (2014)](https://doi.org/10.1038/ncomms5812) |
