@@ -28,7 +28,7 @@ import pandas as pd
 import numpy as np
 
 
-ref_lineage = ["L4", "L4.9", "L4.9(C)", "lineage4"]
+ref_lineage = ["L4", "L4.9", "L4.9(C)", "lineage4", "L4.2.1.1.1.1.1.1.i2"]
 snp_freq_cutoff = 0.5  # cutoff for final prediction
 
 
@@ -61,6 +61,16 @@ def format_pred(pred):
     return pred_fmt
 
 
+def get_genotype_level(s):
+    p_l2_modern = re.compile('2.2.M[1-6]') # higher than L2.2.Modern
+    p_l2_2_1 = re.compile('2.2.1') # lower than L2.2.Modern
+
+    out = s.count('.') + \
+      (0.5 if re.search(p_l2_modern, s) else 0) - \
+      (0.5 if re.search(p_l2_2_1, s) else 0) 
+    return out
+
+
 def predict_lineage_final(pred):
     """Make final lineage prediction
     """
@@ -69,8 +79,9 @@ def predict_lineage_final(pred):
 
     if not pred.empty:
         pred_level = pred \
-            .assign(level=[s.count('.') for s in pred.lineage]) \
+            .assign(level=[get_genotype_level(s) for s in pred.lineage]) \
             .sort_values(by='level', ascending=False)
+
         pred_level = pred_level[pred_level.freq > snp_freq_cutoff] \
             .reset_index(drop=True)
 
@@ -139,7 +150,7 @@ def main(args):
 
     
     # write csv header line
-    hdr = ','.join(['id', 'genotype', 'genotype_specific_snp'])
+    hdr = ','.join(['sample_id', 'genotype', 'genotype_specific_snp'])
     if args.all_schemes:
         hdr = hdr + ',' + ','.join(all_schemes)
 
@@ -148,7 +159,7 @@ def main(args):
 
     # loop over vcf files
     for f in f_vcf:
-        print(os.path.basename(f))
+        if not args.quiet: print(os.path.basename(f))
 
         # read SNPs from vcf
         f_tbi = f + '.tbi'
@@ -198,7 +209,7 @@ if __name__ == "__main__":
     # Optional arguments
     parser.add_argument('-o', '--out', type=str, 
         dest='out_dir', default=os.getcwd(),
-        help='output directory (default: current directory)')
+        help='output directory (default: current working directory)')
 
     parser.add_argument('-f', '--fout', type=str, 
         dest='fout', default='lineage.csv',
@@ -209,15 +220,18 @@ if __name__ == "__main__":
         help='ending pattern of vcf file (default: vcf.gz)')
 
     parser.add_argument('--all_schemes', action='store_true',
-        help='Add prediction from all available SNP schemes (default: off)')
+        help='Add prediction from all available SNP schemes (default: false)')
 
     parser.add_argument('--snpdb', type=str, 
         dest='snpdb', default='snpdb',
         help='Path to genotyping SNP schemes (default: snpdb/)')
+
+    parser.add_argument('--quiet', action='store_true',
+        help='Suppress screen output (default: false)')
 
     args = parser.parse_args()
 
     start = timeit.default_timer()
     main(args)
     elapsed = timeit.default_timer() - start
-    print("elapsed time: %.2f s" % elapsed)
+    if not args.quiet: print("elapsed time: %.2f s" % elapsed)
